@@ -5,6 +5,30 @@
 
 // #define LO_VERBOSE
 
+// clang-format off
+float vertices[] = {
+    -0.5f, -0.5f, 0.0f,     // Bottom left
+     0.5f, -0.5f, 0.0f,     // Top    
+     0.0f,  0.5f, 0.0f,     // Bottom right
+};
+// clang-format on
+
+const char *vertex_shader_source =
+    "#version 330 core \n"
+    "layout (location = 0) in vec3 aPos;\n"
+    "void main()\n"
+    "{\n"
+    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
+    "}\0";
+
+const char *fragment_shader_source =
+    "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "}\0";
+
 void glfw_frame_buffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -49,6 +73,66 @@ int main()
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, glfw_frame_buffer_size_callback);
 
+    // Compile the vertex shader
+    unsigned int vertex_shader = 0;
+    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
+    glCompileShader(vertex_shader);
+    int success = 0;
+    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        std::cout << "ERROR: Could not compile vertex shader source code." << std::endl;
+    }
+
+    // Compile the fragment shader
+    unsigned int fragment_shader = 0;
+    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
+    glCompileShader(fragment_shader);
+    success = 0;
+    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        std::cout << "ERROR: Could not compile fragment shader source code." << std::endl;
+    }
+
+    // Create a shader program
+    unsigned int shader_program;
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+    glLinkProgram(shader_program);
+    success = 0;
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        std::cout << "ERROR: Could not link OpenGL Program." << std::endl;
+    }
+
+    // Delete shader objects. we dont need them anymore.
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
+
+    // Create vertex buffer array
+    unsigned int VBO = 0;  // buffer id
+    glGenBuffers(1, &VBO); // create 1 buffer and set the id in VBO
+
+    // Create vertex attribute array
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+
+    // First bind VAO, then VBO. Then populate VBO with data and then populate VAO with data.
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+
+    // Unbind both VAO and VBO
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
     while (!glfwWindowShouldClose(window))
     {
         // Process Input
@@ -58,9 +142,19 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Use shader program and draw triangles
+        glUseProgram(shader_program);
+        glBindVertexArray(VAO); // bind the VAO to use. this is bound to the VBO we used earlier.
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    // Free up resource
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteProgram(shader_program);
 
     glfwTerminate();
     return 0;

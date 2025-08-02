@@ -3,10 +3,25 @@
 
 #include <iostream>
 
-void glfw_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
+// #define LO_VERBOSE
+
+void glfw_frame_buffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
-    // std::cout << "Window resized to (" << width << ", " << height << ")" << std::endl;
+#ifdef LO_VERBOSE
+    std::cout << "Window resized to (" << width << ", " << height << ")" << std::endl;
+#endif
+}
+
+void process_input(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, true);
+#ifdef LO_VERBOSE
+        std::cout << "Esc key pressed. Closing Window...";
+#endif
+    }
 }
 
 int main()
@@ -16,7 +31,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window." << std::endl;
@@ -34,8 +49,15 @@ int main()
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, glfw_frame_buffer_size_callback);
 
-    while(!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window))
     {
+        // Process Input
+        process_input(window);
+
+        // Rendering commands
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

@@ -4,7 +4,7 @@ project(LearnOpengl)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME})
 
 add_subdirectory(vendor/glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
@@ -71,3 +71,6 @@ target_include_directories(glad PUBLIC ${GLAD_OUTPUT_DIR}/include)
 add_dependencies(glad generate_glad)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glad)
+
+# Add source file subdirectory
+add_subdirectory(tutorial)

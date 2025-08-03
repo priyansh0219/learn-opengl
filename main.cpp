@@ -8,8 +8,14 @@
 // clang-format off
 float vertices[] = {
     -0.5f, -0.5f, 0.0f,     // Bottom left
-     0.5f, -0.5f, 0.0f,     // Top    
-     0.0f,  0.5f, 0.0f,     // Bottom right
+    -0.5f,  0.5f, 0.0f,     // Top left    
+     0.5f, -0.5f, 0.0f,     // Bottom right
+     0.5f,  0.5f, 0.0f,     // Top right
+};
+
+unsigned int indices[] = {
+    3, 2, 1,
+    2, 0, 1,
 };
 // clang-format on
 
@@ -122,16 +128,39 @@ int main()
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
 
-    // First bind VAO, then VBO. Then populate VBO with data and then populate VAO with data.
+    // Create vertex index array (element buffer object)
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+
+    // First bind VAO. This is like the master state for our object.
     glBindVertexArray(VAO);
+
+    // Bind the VBO (which binds it to VAO) and populate vertex data.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Bind the EBO and populate it with vertex indices.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Set the vertex attribute pointers.
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
-    // Unbind both VAO and VBO
+    // Unbind the VBO. This is allowed since call the glVertexAttribPointer registered this VBO as the VBO for active VAO.
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // DO NOT unbind EBO while VAO is bound.
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // Unbind the VAO so that any call to some other VAO doesnt mistakenly modify this one.
     glBindVertexArray(0);
+
+    // Now that VAO is unbound, we can unbind EBO.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // Uncomment this for wireframe mode.
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -144,8 +173,9 @@ int main()
 
         // Use shader program and draw triangles
         glUseProgram(shader_program);
-        glBindVertexArray(VAO); // bind the VAO to use. this is bound to the VBO we used earlier.
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(VAO); // bind the VAO to use. this is bound to the EBO we used earlier.
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -154,6 +184,7 @@ int main()
     // Free up resource
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shader_program);
 
     glfwTerminate();

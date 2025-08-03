@@ -30,9 +30,10 @@ const char *vertex_shader_source =
 const char *fragment_shader_source =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
+    "uniform vec4 outColor;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "   FragColor = outColor;\n"
     "}\0";
 
 void glfw_frame_buffer_size_callback(GLFWwindow *window, int width, int height)
@@ -171,9 +172,15 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Get the green color value
+        float time = (float)glfwGetTime();
+        float green_value = sinf(time) / 2.0f + 0.5f;
+
         // Use shader program and draw triangles
         glUseProgram(shader_program);
         glBindVertexArray(VAO); // bind the VAO to use. this is bound to the EBO we used earlier.
+        int color_location = glGetUniformLocation(shader_program, "outColor");
+        glUniform4f(color_location, 0.0f, green_value, 0.0f, 1.0f);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 

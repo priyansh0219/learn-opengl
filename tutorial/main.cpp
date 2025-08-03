@@ -7,33 +7,31 @@
 
 // clang-format off
 float vertices[] = {
-    -0.5f, -0.5f, 0.0f,     // Bottom left
-    -0.5f,  0.5f, 0.0f,     // Top left    
-     0.5f, -0.5f, 0.0f,     // Bottom right
-     0.5f,  0.5f, 0.0f,     // Top right
-};
-
-unsigned int indices[] = {
-    3, 2, 1,
-    2, 0, 1,
+    // Positions            // Color
+    -0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,     // Bottom left - Red
+     0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,     // Bottom right - Green
+     0.0f,  0.5f, 0.0f,     0.0f, 0.0f, 1.0f,     // Top - Blue
 };
 // clang-format on
 
 const char *vertex_shader_source =
     "#version 330 core \n"
     "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 1) in vec3 aColor;\n"
+    "out vec3 ourColor;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
+    "   ourColor = aColor;\n"
     "}\0";
 
 const char *fragment_shader_source =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
-    "uniform vec4 outColor;\n"
+    "in vec3 ourColor;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = outColor;\n"
+    "   FragColor = vec4(ourColor, 1.0f);\n"
     "}\0";
 
 void glfw_frame_buffer_size_callback(GLFWwindow *window, int width, int height)
@@ -129,10 +127,6 @@ int main()
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
 
-    // Create vertex index array (element buffer object)
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-
     // First bind VAO. This is like the master state for our object.
     glBindVertexArray(VAO);
 
@@ -140,25 +134,17 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // Bind the EBO and populate it with vertex indices.
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
     // Set the vertex attribute pointers.
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // Unbind the VBO. This is allowed since call the glVertexAttribPointer registered this VBO as the VBO for active VAO.
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // DO NOT unbind EBO while VAO is bound.
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
     // Unbind the VAO so that any call to some other VAO doesnt mistakenly modify this one.
     glBindVertexArray(0);
-
-    // Now that VAO is unbound, we can unbind EBO.
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Uncomment this for wireframe mode.
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -172,17 +158,10 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Get the green color value
-        float time = (float)glfwGetTime();
-        float green_value = sinf(time) / 2.0f + 0.5f;
-
         // Use shader program and draw triangles
         glUseProgram(shader_program);
         glBindVertexArray(VAO); // bind the VAO to use. this is bound to the EBO we used earlier.
-        int color_location = glGetUniformLocation(shader_program, "outColor");
-        glUniform4f(color_location, 0.0f, green_value, 0.0f, 1.0f);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -191,7 +170,6 @@ int main()
     // Free up resource
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shader_program);
 
     glfwTerminate();

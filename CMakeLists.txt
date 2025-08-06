@@ -73,4 +73,4 @@ add_dependencies(glad generate_glad)
 target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 
 # Add source file subdirectory
-add_subdirectory(tutorial)
+add_subdirectory(exercises/3.4.exercise1)

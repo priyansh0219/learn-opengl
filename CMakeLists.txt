@@ -72,5 +72,8 @@ add_dependencies(glad generate_glad)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 
+# STB IMAGE LIBRARY
+target_include_directories(${PROJECT_NAME} PRIVATE vendor/stb)
+
 # Add source file subdirectory
-add_subdirectory(exercises/3.4.exercise3)
+add_subdirectory(tutorial)

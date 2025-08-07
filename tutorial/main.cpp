@@ -1,5 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include "shader.hpp"
 
@@ -9,10 +11,16 @@
 
 // clang-format off
 float vertices[] = {
-    // Positions            // Color
-    -0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,     // Bottom left - Red
-     0.5f, -0.5f, 0.0f,     0.0f, 1.0f, 0.0f,     // Bottom right - Green
-     0.0f,  0.5f, 0.0f,     0.0f, 0.0f, 1.0f,     // Top - Blue
+    // Positions          // Color            // Texture Coordinates
+    -0.5f, -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.0f, 0.0f,     // Bottom left
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,     // Bottom right
+    -0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,     // Top Left
+     0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f,     // Top Right
+};
+
+unsigned int indices[] = {
+    0, 2, 3,
+    3, 1, 0
 };
 // clang-format on
 
@@ -60,11 +68,49 @@ int main()
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, glfw_frame_buffer_size_callback);
 
+    // * Set shader texture parameters
+
+    // Mirror Repeat Texture
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+    // Set texture border color
+    float borderColor[] = {1.0f, 1.0f, 0.0f, 1.0f}; // Yellow, maybe??
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    // Set texture filtering algos
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("resources/textures/container.jpg", &width, &height, &nrChannels, 0);
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "ERROR::TEXTURE::STBI_DATA_EMPTY" << std::endl;
+    }
+
+    stbi_image_free(data);
+
+    // Create the shader object
     Shader shader("tutorial/shader.vs.glsl", "tutorial/shader.fs.glsl");
 
     // Create vertex buffer array
     unsigned int VBO = 0;  // buffer id
     glGenBuffers(1, &VBO); // create 1 buffer and set the id in VBO
+
+    // Create Element buffer array
+    unsigned int EBO = 0;
+    glGenBuffers(1, &EBO);
 
     // Create vertex attribute array
     unsigned int VAO;
@@ -73,21 +119,30 @@ int main()
     // First bind VAO. This is like the master state for our object.
     glBindVertexArray(VAO);
 
+    // Bind and populate EBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
     // Bind the VBO (which binds it to VAO) and populate vertex data.
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Set the vertex attribute pointers.
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // Unbind the VBO. This is allowed since call the glVertexAttribPointer registered this VBO as the VBO for active VAO.
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Unbind the VAO so that any call to some other VAO doesnt mistakenly modify this one.
     glBindVertexArray(0);
+
+    // Unbind the EBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Uncomment this for wireframe mode.
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -103,8 +158,9 @@ int main()
 
         // Use shader program and draw triangles
         shader.use();
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO); // bind the VAO to use. this is bound to the EBO we used earlier.
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

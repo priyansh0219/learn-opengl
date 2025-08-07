@@ -76,4 +76,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 target_include_directories(${PROJECT_NAME} PRIVATE vendor/stb)
 
 # Add source file subdirectory
-add_subdirectory(tutorial)
+add_subdirectory(exercises/4.3.exercise1)

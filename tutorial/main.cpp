@@ -82,12 +82,14 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    stbi_set_flip_vertically_on_load(true);
     int width, height, nrChannels;
     unsigned char *data = stbi_load("resources/textures/container.jpg", &width, &height, &nrChannels, 0);
 
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    unsigned int textures[2];
+    glGenTextures(2, textures);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
 
     if (data)
     {
@@ -96,10 +98,27 @@ int main()
     }
     else
     {
-        std::cerr << "ERROR::TEXTURE::STBI_DATA_EMPTY" << std::endl;
+        std::cerr << "ERROR::TEXTURE::STBI_DATA_EMPTY for texture 1" << std::endl;
     }
-
     stbi_image_free(data);
+    data = nullptr;
+
+    width = height = nrChannels = 0;
+    data = stbi_load("resources/textures/awesomeface.png", &width, &height, &nrChannels, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "ERROR::TEXTURE::STBI_DATA_EMPTY for texture 2" << std::endl;
+    }
+    stbi_image_free(data);
+    data = nullptr;
 
     // Create the shader object
     Shader shader("tutorial/shader.vs.glsl", "tutorial/shader.fs.glsl");
@@ -147,6 +166,10 @@ int main()
     // Uncomment this for wireframe mode.
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    shader.use();
+    shader.setInt("texture1", 0);
+    shader.setInt("texture2", 1);
+
     while (!glfwWindowShouldClose(window))
     {
         // Process Input
@@ -158,7 +181,10 @@ int main()
 
         // Use shader program and draw triangles
         shader.use();
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
         glBindVertexArray(VAO); // bind the VAO to use. this is bound to the EBO we used earlier.
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -167,6 +193,7 @@ int main()
     }
 
     // Free up resource
+    glDeleteTextures(2, textures);
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     shader.destroy();

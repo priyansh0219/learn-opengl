@@ -6,6 +6,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(${PROJECT_NAME})
 
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 20
+)
+
 add_subdirectory(vendor/glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_include_directories(${PROJECT_NAME} PRIVATE vendor/glfw/include)
@@ -76,4 +80,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 target_include_directories(${PROJECT_NAME} PRIVATE vendor/stb)
 
 # Add source file subdirectory
-add_subdirectory(exercises/4.3.exercise3)
+add_subdirectory(exercises/4.3.exercise4)

@@ -79,5 +79,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 # STB IMAGE LIBRARY
 target_include_directories(${PROJECT_NAME} PRIVATE vendor/stb)
 
+# GLM
+target_include_directories(${PROJECT_NAME} PRIVATE vendor/glm)
+
 # Add source file subdirectory
-add_subdirectory(exercises/4.3.exercise4)
+add_subdirectory(tutorial)

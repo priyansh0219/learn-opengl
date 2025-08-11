@@ -2,6 +2,9 @@
 #include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "shader.hpp"
 
@@ -170,8 +173,22 @@ int main()
     shader.setInt("texture1", 0);
     shader.setInt("texture2", 1);
 
+    glm::mat4 trans(1.0f);
+
+    float prev_time = 0.0f;
+
     while (!glfwWindowShouldClose(window))
     {
+        float now_time = (float)glfwGetTime();
+        float time_elapsed = prev_time - now_time;
+        prev_time = now_time;
+
+        float rot_speed = 10.0f;
+        trans = glm::rotate(trans, glm::radians(time_elapsed*rot_speed), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        int trans_loc = glGetUniformLocation(shader.getID(), "transform");
+        glUniformMatrix4fv(trans_loc, 1, GL_FALSE, glm::value_ptr(trans));
+
         // Process Input
         process_input(window);
 

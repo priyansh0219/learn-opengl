@@ -83,4 +83,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE vendor/stb)
 target_include_directories(${PROJECT_NAME} PRIVATE vendor/glm)
 
 # Add source file subdirectory
-add_subdirectory(tutorial)
+add_subdirectory(exercises/5.2.exercise1)
